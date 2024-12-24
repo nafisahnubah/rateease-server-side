@@ -4,6 +4,8 @@
 -
 -
 ## npm packages used:
--
--
+- express
+- cors
+- dotenv
+- mongodb
 
