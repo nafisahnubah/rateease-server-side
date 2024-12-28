@@ -63,6 +63,39 @@ async function run() {
       res.send(result);
     })
 
+    app.get('/my-services/:id', async(req, res) => {
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)};
+      const result = await servicesCollection.findOne(query);
+      res.send(result);
+    })
+
+    app.put('/my-services/:id', async(req, res) => {
+      const id = req.params.id;
+      const filter = {_id: new ObjectId(id)};
+      const options = {upsert: true};
+      const updatedService = req.body;
+      const service = {
+        $set: {
+          company_name: updatedService.company_name,
+          company_logo: updatedService.company_logo,
+          service_name: updatedService.service_name,
+          service_description: updatedService.service_description,
+          service_category: updatedService.service_category,
+          website: updatedService.website
+        }
+      }
+      const result = await servicesCollection.updateOne(filter, service, options);
+      res.send(result);
+    })
+
+    app.delete('/my-services/:id', async(req, res) => {
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)};
+      const result = await servicesCollection.deleteOne(query);
+      res.send(result);
+    })
+
     //Reviews related APIs
     const reviewsCollection = client.db('rate-ease').collection('reviews');
 
@@ -95,6 +128,35 @@ async function run() {
       const query = {service_id: id};
       const cursor = reviewsCollection.find(query);
       const result = await cursor.toArray();
+      res.send(result);
+    })
+
+    app.get('/my-reviews/:id', async(req, res) => {
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)};
+      const result = await reviewsCollection.findOne(query);
+      res.send(result);
+    })
+
+    app.put('/my-reviews/:id', async(req, res) => {
+      const id = req.params.id;
+      const filter = {_id: new ObjectId(id)};
+      const options = {upsert: true};
+      const updatedReview = req.body;
+      const service = {
+        $set: {
+          rating: updatedReview.rating,
+          review: updatedReview.review
+        }
+      }
+      const result = await reviewsCollection.updateOne(filter, service, options);
+      res.send(result);
+    })
+
+    app.delete('/my-reviews/:id', async(req, res) => {
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)};
+      const result = await reviewsCollection.deleteOne(query);
       res.send(result);
     })
 
