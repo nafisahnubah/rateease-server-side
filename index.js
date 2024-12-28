@@ -1,9 +1,9 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const app = express();
 const port = process.env.PORT || 5000;
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-require('dotenv').config();
 
 app.use(cors());
 app.use(express.json());
@@ -22,58 +22,61 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
 
     // Services related APIs
     const servicesCollection = client.db('rate-ease').collection('services');
 
-    app.get('/services', async(req, res) => {
-      const cursor = servicesCollection.find();
-      const result = await cursor.toArray();
-      res.send(result);
-    })
+    app.get('/services', (req, res) => {
+      servicesCollection.find().toArray()
+        .then(result => res.send(result))
+        .catch(error => res.status(500).send({ error: 'Error retrieving services.' }));
+    });
 
-    app.get('/featured-services', async(req, res) => {
-      const cursor = servicesCollection.find().limit(6);
-      const result = await cursor.toArray();
-      res.send(result);
-    })
+    app.get('/featured-services', (req, res) => {
+      servicesCollection.find().limit(6).toArray()
+        .then(result => res.send(result))
+        .catch(error => res.status(500).send({ error: 'Error retrieving featured services.' }));
+    });
 
-    app.get('/services/:id', async(req, res) => {
+    app.get('/services/:id', (req, res) => {
       const id = req.params.id;
-      const query = {_id: new ObjectId(id)};
-      const result = await servicesCollection.findOne(query);
-      res.send(result);
-    })
+      const query = { _id: new ObjectId(id) };
+      servicesCollection.findOne(query)
+        .then(result => res.send(result))
+        .catch(error => res.status(500).send({ error: 'Error retrieving the service.' }));
+    });
 
-    app.post('/add-service', async(req, res) => {
+    app.post('/add-service', (req, res) => {
       const service = req.body;
-      const result = await servicesCollection.insertOne(service);
-      res.send(result);
-    })
+      servicesCollection.insertOne(service)
+        .then(result => res.send(result))
+        .catch(error => res.status(500).send({ error: 'Error adding service.' }));
+    });
 
-    app.get('/my-services', async(req, res) => {
+    app.get('/my-services', (req, res) => {
       const email = req.query.email;
-      const query = {user_email: email};
-      const cursor = servicesCollection.find(query);
-      const result = await cursor.toArray();
-      res.send(result);
-    })
+      const query = { user_email: email };
+      servicesCollection.find(query).toArray()
+        .then(result => res.send(result))
+        .catch(error => res.status(500).send({ error: 'Error retrieving user services.' }));
+    });
 
-    app.get('/my-services/:id', async(req, res) => {
+    app.get('/my-services/:id', (req, res) => {
       const id = req.params.id;
-      const query = {_id: new ObjectId(id)};
-      const result = await servicesCollection.findOne(query);
-      res.send(result);
-    })
+      const query = { _id: new ObjectId(id) };
+      servicesCollection.findOne(query)
+        .then(result => res.send(result))
+        .catch(error => res.status(500).send({ error: 'Error retrieving the service.' }));
+    });
 
-    app.put('/my-services/:id', async(req, res) => {
+    app.put('/my-services/:id', (req, res) => {
       const id = req.params.id;
-      const filter = {_id: new ObjectId(id)};
-      const options = {upsert: true};
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
       const updatedService = req.body;
       const service = {
         $set: {
@@ -84,81 +87,93 @@ async function run() {
           service_category: updatedService.service_category,
           website: updatedService.website
         }
-      }
-      const result = await servicesCollection.updateOne(filter, service, options);
-      res.send(result);
-    })
+      };
+      servicesCollection.updateOne(filter, service, options)
+        .then(result => res.send(result))
+        .catch(error => res.status(500).send({ error: 'Error updating service.' }));
+    });
 
-    app.delete('/my-services/:id', async(req, res) => {
+    app.delete('/my-services/:id', (req, res) => {
       const id = req.params.id;
-      const query = {_id: new ObjectId(id)};
-      const result = await servicesCollection.deleteOne(query);
-      res.send(result);
-    })
+      const query = { _id: new ObjectId(id) };
+      servicesCollection.deleteOne(query)
+        .then(result => res.send(result))
+        .catch(error => res.status(500).send({ error: 'Error deleting service.' }));
+    });
 
     //Reviews related APIs
     const reviewsCollection = client.db('rate-ease').collection('reviews');
 
-    app.post('/reviews', async(req, res) => {
+    app.post('/reviews', (req, res) => {
       const userReview = req.body;
-      const result = await reviewsCollection.insertOne(userReview);
-      res.send(result);
-    })
+      reviewsCollection.insertOne(userReview)
+        .then(result => res.send(result))
+        .catch(error => res.status(500).send({ error: 'Error posting review.' }));
+    });
 
-    app.get('/my-reviews', async(req, res) => {
+    app.get('/my-reviews', (req, res) => {
       const userEmail = req.query.email;
-      const query = {email: userEmail};
-      const cursor = reviewsCollection.find(query);
-      const result = await cursor.toArray();
+      const query = { email: userEmail };
+      reviewsCollection.find(query).toArray()
+        .then(result => {
+          const promises = result.map((review) => {
+            const query1 = { _id: new ObjectId(review.service_id) };
+            return servicesCollection.findOne(query1)
+              .then(service => {
+                if (service) {
+                  review.company_name = service.company_name;
+                  review.company_logo = service.company_logo;
+                  review.service_name = service.service_name;
+                }
+                return review;
+              });
+          });
+          Promise.all(promises).then(updatedReviews => {
+            res.send(updatedReviews);
+          });
+        })
+        .catch(error => res.status(500).send({ error: 'Error retrieving user reviews.' }));
+    });
 
-      for(const review of result){
-        const query1 = {_id: new ObjectId(review.service_id)};
-        const service = await servicesCollection.findOne(query1);
-        if(service){
-          review.company_name = service.company_name;
-          review.company_logo = service.company_logo;
-          review.service_name = service.service_name;
-        }
-      }
-      res.send(result);
-    })
-
-    app.get('/reviews/:id', async(req, res) => {
+    app.get('/reviews/:id', (req, res) => {
       const id = req.params.id;
-      const query = {service_id: id};
-      const cursor = reviewsCollection.find(query);
-      const result = await cursor.toArray();
-      res.send(result);
-    })
+      const query = { service_id: id };
+      reviewsCollection.find(query).toArray()
+        .then(result => res.send(result))
+        .catch(error => res.status(500).send({ error: 'Error retrieving reviews.' }));
+    });
 
-    app.get('/my-reviews/:id', async(req, res) => {
+    app.get('/my-reviews/:id', (req, res) => {
       const id = req.params.id;
-      const query = {_id: new ObjectId(id)};
-      const result = await reviewsCollection.findOne(query);
-      res.send(result);
-    })
+      const query = { _id: new ObjectId(id) };
+      reviewsCollection.findOne(query)
+        .then(result => res.send(result))
+        .catch(error => res.status(500).send({ error: 'Error retrieving the review.' }));
+    });
 
-    app.put('/my-reviews/:id', async(req, res) => {
+    app.put('/my-reviews/:id', (req, res) => {
       const id = req.params.id;
-      const filter = {_id: new ObjectId(id)};
-      const options = {upsert: true};
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
       const updatedReview = req.body;
-      const service = {
+      const review = {
         $set: {
           rating: updatedReview.rating,
           review: updatedReview.review
         }
-      }
-      const result = await reviewsCollection.updateOne(filter, service, options);
-      res.send(result);
-    })
+      };
+      reviewsCollection.updateOne(filter, review, options)
+        .then(result => res.send(result))
+        .catch(error => res.status(500).send({ error: 'Error updating review.' }));
+    });
 
-    app.delete('/my-reviews/:id', async(req, res) => {
+    app.delete('/my-reviews/:id', (req, res) => {
       const id = req.params.id;
-      const query = {_id: new ObjectId(id)};
-      const result = await reviewsCollection.deleteOne(query);
-      res.send(result);
-    })
+      const query = { _id: new ObjectId(id) };
+      reviewsCollection.deleteOne(query)
+        .then(result => res.send(result))
+        .catch(error => res.status(500).send({ error: 'Error deleting review.' }));
+    });
 
   } finally {
     // Ensures that the client will close when you finish/error
