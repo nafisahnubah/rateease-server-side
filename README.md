@@ -2,6 +2,9 @@
 
 This projects is the server-side part of RateEase, a Service Review Application System. It handles user authentication, service management, review submission, and interacts with the database. The backend is built using Node.js and Express, and it communicates with the frontend to provide necessary data.
 
+## Frontend repository
+- https://github.com/nafisahnubah/rateease-client-side
+
 ## Table of Contents
 - [Features](#features)
 - [Tech Stack](#tech-stack)
