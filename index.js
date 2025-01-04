@@ -31,8 +31,19 @@ async function run() {
     const servicesCollection = client.db('rate-ease').collection('services');
 
     app.get('/services', (req, res) => {
-      servicesCollection.find().toArray()
+      const page = parseInt(req.query.page);
+      const size = parseInt(req.query.size);
+      servicesCollection.find()
+      .skip(page * size)
+      .limit(size)
+      .toArray()
         .then(result => res.send(result))
+        .catch(error => res.status(500).send({ error: 'Error retrieving services.' }));
+    });
+
+    app.get('/servicesCount', (req, res) => {
+      servicesCollection.estimatedDocumentCount()
+        .then(count => res.send({count}))
         .catch(error => res.status(500).send({ error: 'Error retrieving services.' }));
     });
 

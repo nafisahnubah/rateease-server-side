@@ -18,7 +18,6 @@ This projects is the server-side part of RateEase, a Service Review Application 
 - **Node.js**
 - **Express.js**
 - **MongoDB**
-- **JWT**
 - **Mongoose**
 - **CORS**
 
